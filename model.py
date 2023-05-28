@@ -1,5 +1,6 @@
 from typing import Iterable
-
+from numba import njit
+from numba.experimental import jitclass
 import numpy as np
 
 
@@ -20,7 +21,7 @@ class Model:
         self.T = T
 
         self.num_of_nodes = 0
-        self.connections = np.zeros(shape=(m0 + T*m, m0 + T), dtype=float)
+        self.connections = np.zeros(shape=(m0 + T, m0 + T), dtype=float)
 
         self._initialize()
 
@@ -51,14 +52,15 @@ class Model:
                 column = self.connections[:self.num_of_nodes, j]
                 row = self.connections[j, :self.num_of_nodes]
 
+                # with np.printoptions(precision=2, suppress=True):
+                #     print(f'{j = }')
+                #     print(f'{column = }')
+                #     print(f'{row = }')
+
                 increase = self.delta * (column/column.sum())
 
-                connections_to_increase.append(column)
-                connections_to_increase.append(row)
-
-                increase_values.append(increase)
-                increase_values.append(increase)
-
+                connections_to_increase.extend((column, row))
+                increase_values.extend((increase, increase))
         for connection, increase in zip(
                 connections_to_increase, increase_values):
 
@@ -71,7 +73,8 @@ class Model:
         self.num_of_nodes = self.m0
 
     def show_network(self) -> None:
-        with np.printoptions(precision=3, suppress=True):
+        with np.printoptions(precision=1, suppress=True):
+            print(f't = {self.t}')
             print(self.connections[:self.num_of_nodes, :self.num_of_nodes])
             print()
 
@@ -92,6 +95,6 @@ class Model:
             self.step()
 
         self.show_network()
-
+        return self.connections
 
 
